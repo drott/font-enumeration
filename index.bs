@@ -111,6 +111,40 @@ The following code queries the available local fonts, and logs details about eac
   // This sketch returns individual FontFace instances rather than families:
   // In the future, query() could take filters e.g. family name, and/or options
   // e.g. locale.
+  
+// Comment (drott): As expressed in previous feedback and in the
+// follow-up and review of Olivier's initial CL: I find using
+// FontFace here as the container / entrypoint for returning
+// enumerated local fonts problematic. The semantics here are:
+// Provide a handle from which metadata about a locally installed
+// font can be access, with the possiblity of referencing and
+// loading it in a next step. The semantics of FontFace are: Provide
+// a JS interface for the CSS @font-face declaration and allow
+// control of whether that FontFace is added to the document /
+// CSS-connected, allow controlling loading of it.  Here, we're not
+// using the loading aspects, but only need enumeration. Loading the
+// returned fonts can be done using a src: local(postscrtip name /
+// full font name) FontFace.
+//
+// Secondly, the font-family: descriptor in a @font-face CSS
+// declaration and in a corresponding FontFace JS object can be an
+// arbitrary alias and does not necessarily need to match any name
+// that is contained in the actual font file sources that the
+// FontFace object refers to, so this descriptor value would not be
+// a good place to return metadata. Also, it's unclear how other
+// descriptor values for a FontFace object should be populated,
+// src:? font-style: etc?
+//
+// That's why from a design perspective, I would suggest to separate
+// the interface/object type that is returned by enumeration from
+// the FontFace CSS API that controls loading.
+//
+// From an implementation perspective, it is also worth nothing that
+// creating FontFace objects in memory may have side effects on font
+// matching performance for the current document. We would need to
+// check if additional FontFace objects are added to caches of
+// CSSFontSelector, CSSSegmentedFontFace, etc.
+  
   const fontsIterator = navigator.fonts.query();
 
   for await (let face of fontsIterator) {
